@@ -35,8 +35,8 @@ export default function EditPostPage() {
     });
 
     if (res.ok) {
-      router.push(`/post/${id}`);
       router.refresh();
+      router.push(`/post/${id}`);
     } else {
       alert("failed to update post");
     }

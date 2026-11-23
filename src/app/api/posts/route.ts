@@ -1,4 +1,5 @@
 import { desc } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
@@ -18,7 +19,9 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  
+
   const newPost = await db.insert(posts).values({ title, content }).returning();
+  revalidatePath("/");
+  revalidatePath(`/post/${newPost[0].id}`); 
   return NextResponse.json(newPost[0], { status: 201 });
 }

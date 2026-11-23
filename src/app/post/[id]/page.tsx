@@ -39,11 +39,11 @@ export default function PostDetail() {
 
   const handleDelete = async () => {
     await fetch(`/api/posts/${id}`, { method: "DELETE" });
+    router.refresh();
     router.push("/");
   };
 
   const handleEdit = async () => {
-    await fetch(`/api/posts/${id}/edit`);
     router.push(`/post/${id}/edit`);
   };
 

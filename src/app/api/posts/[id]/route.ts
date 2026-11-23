@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
@@ -52,7 +53,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
-  // 204 tidak boleh punya body
+  revalidatePath("/"); 
   return new NextResponse(null, { status: 204 });
 }
 
@@ -87,5 +88,7 @@ export async function PUT(
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
+  revalidatePath("/");
+  revalidatePath(`/post/${numericId}`);
   return NextResponse.json(updated[0]);
 }
