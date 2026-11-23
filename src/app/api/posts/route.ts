@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-
+  
   const newPost = await db.insert(posts).values({ title, content }).returning();
-  return NextResponse.json(newPost, { status: 201 });
+  return NextResponse.json(newPost[0], { status: 201 });
 }

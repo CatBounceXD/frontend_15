@@ -3,23 +3,33 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 
+function parseId(id: string): number | null {
+  const numericId = Number(id);
+  return Number.isNaN(numericId) ? null : numericId;
+}
+
 export async function GET(
   _: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const numericId = parseId(id);
 
-  const post = await db
+  if (numericId === null) {
+    return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
+  }
+
+  const rows = await db
     .select()
     .from(posts)
-    .where(eq(posts.id, Number(id)))
-    .get();
+    .where(eq(posts.id, numericId))
+    .limit(1);
 
-  if (!post) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
-  return NextResponse.json(post);
+  return NextResponse.json(rows[0]);
 }
 
 export async function DELETE(
@@ -27,10 +37,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const numericId = parseId(id);
 
-  await db.delete(posts).where(eq(posts.id, Number(id)));
+  if (numericId === null) {
+    return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
+  }
 
-  return NextResponse.json({ message: "Deleted" }, { status: 204 });
+  const deleted = await db
+    .delete(posts)
+    .where(eq(posts.id, numericId))
+    .returning();
+
+  if (deleted.length === 0) {
+    return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  }
+
+  // 204 tidak boleh punya body
+  return new NextResponse(null, { status: 204 });
 }
 
 export async function PUT(
@@ -38,11 +61,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const numericId = parseId(id);
+
+  if (numericId === null) {
+    return NextResponse.json({ error: "ID tidak valid" }, { status: 400 });
+  }
+
   const body = await request.json();
+  const { title, content } = body ?? {};
 
-  const { title, content } = body;
-
-  // Validasi sederhana
   if (!title || !content) {
     return NextResponse.json(
       { error: "Title dan content wajib diisi" },
@@ -53,13 +80,12 @@ export async function PUT(
   const updated = await db
     .update(posts)
     .set({ title, content })
-    .where(eq(posts.id, Number(id)))
-    .returning()
-    .get();
+    .where(eq(posts.id, numericId))
+    .returning();
 
-  if (!updated) {
+  if (updated.length === 0) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
-  return NextResponse.json(updated);
+  return NextResponse.json(updated[0]);
 }

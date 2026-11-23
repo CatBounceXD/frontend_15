@@ -9,10 +9,32 @@ export default function PostDetail() {
   const [post, setPost] = useState<unknown>(null);
 
   useEffect(() => {
-    fetch(`/api/posts/${id}`).then(async (res) => {
-      if (res.status === 404) router.push("/not-found");
-      else setPost(await res.json());
-    });
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/posts/${id}`);
+
+        if (res.status === 404) {
+          router.push("/not-found");
+          return;
+        }
+
+        if (!res.ok) {
+          console.error("GET post failed:", res.status, await res.text());
+          return;
+        }
+
+        const data = await res.json();
+        if (!cancelled) setPost(data);
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, router]);
 
   const handleDelete = async () => {
@@ -23,7 +45,7 @@ export default function PostDetail() {
   const handleEdit = async () => {
     await fetch(`/api/posts/${id}/edit`);
     router.push(`/post/${id}/edit`);
-  }
+  };
 
   if (!post) return <p className="container mt-4">Loading...</p>;
 
